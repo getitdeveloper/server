@@ -2,6 +2,7 @@ import json
 from json import JSONDecodeError
 
 import requests
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets, mixins
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
@@ -9,7 +10,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from accounts.jwt import generate_access_token
 from accounts.models import User
-from accounts.serializers import UserSerializer
+from accounts.serializers import UserSerializer, SocialLoginSerializer
 
 
 @api_view(["GET"])
@@ -44,19 +45,16 @@ class UserViewSet(mixins.RetrieveModelMixin,
             raise JSONDecodeError(error)
         user = User.objects.filter(social_id=social_id).first()
         if user:
-            access_token = generate_access_token(user.social_id)
             data['message'] = 'login'
-            data['access_token'] = access_token
+            data['access_token'] = generate_access_token(user.social_id)
             data['id'] = user.id
             data['nickname'] = user.nickname
-            data['social_type'] = user.social_type
             return Response(data, status=status.HTTP_200_OK)
         user = User.objects.create_user(social_id=social_id, social_type='google', nickname='example')
         data['message'] = 'signup'
         data['access_token'] = generate_access_token(user.social_id)
         data['id'] = user.id
         data['nickname'] = user.nickname
-        data['social_type'] = user.social_type
         return Response(data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], detail=False)
